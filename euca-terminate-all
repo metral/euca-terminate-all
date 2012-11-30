@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+
+#===============================================================================
+# This script terminates all current instances instantiated by EC2/Euca
+#
+# Author: Mike Metral
+#-------------------------------------------------------------------------------
+import subprocess as sp
+import os
+#-------------------------------------------------------------------------------
+def terminate_all_instances():
+    # Retrieve all info about the instances
+    get_all_instances = sp.Popen(["euca-describe-instances"], stdout = sp.PIPE)
+
+    # Grep for the lines in the info that contain the word 'INSTANCE'
+    grep_instance = sp.Popen(["grep", "INSTANCE"], 
+        stdin = get_all_instances.stdout, stdout = sp.PIPE)
+
+    # From the retrieved lines, get the instance_id from column 2
+    awk_instance_ids = sp.Popen(["awk", "{print $2}"], 
+        stdin = grep_instance.stdout, stdout = sp.PIPE)
+    all_instance_ids = awk_instance_ids.communicate()[0]
+
+    # Remove the new line characters to get a continuous set of instance_id's
+    formatted_instance_ids = all_instance_ids.replace("\n", " ")
+
+    # Terminate the instances by instance_id
+    print "Terminating instance(s):"
+    os.system("euca-terminate-instances " + formatted_instance_ids)
+#-------------------------------------------------------------------------------
+def main():
+    terminate_all_instances()
+#-------------------------------------------------------------------------------
+if __name__ == "__main__":
+    main()
+#===============================================================================
